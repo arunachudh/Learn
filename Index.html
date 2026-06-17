@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Apple SDET — 28-Day Training Log</title>
+<style>
+  :root{
+    --paper:#F5F6F8; --panel:#FFFFFF; --panel-2:#FBFBFC;
+    --ink:#13161B; --muted:#5C6573; --faint:#8A93A2;
+    --line:#E4E7EC; --line-2:#EEF0F3;
+    --code:#2447F0;   /* DSA / build  */
+    --lang:#0E8E8E;   /* python/swift/xctest */
+    --craft:#6D43D6;  /* sdet/design/api/sql */
+    --meta:#B4690E;   /* mock/review/prep/taper */
+    --done:#1F8A4C;
+    --today:#B4690E;
+    --shadow:0 1px 2px rgba(20,22,27,.04), 0 6px 20px rgba(20,22,27,.05);
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  [data-theme="dark"]{
+    --paper:#0D0F13; --panel:#15181E; --panel-2:#1A1E25;
+    --ink:#EAECEF; --muted:#9AA3B2; --faint:#6B7382;
+    --line:#262B33; --line-2:#1F242B;
+    --code:#6E8BFF; --lang:#3FBFBF; --craft:#A78BFA; --meta:#E0A845;
+    --done:#43C97D; --today:#E0A845;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 22px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:var(--sans); line-height:1.5;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  a{color:var(--code); text-decoration:none; border-bottom:1px solid color-mix(in srgb, var(--code) 30%, transparent)}
+  a:hover{border-bottom-color:var(--code)}
+  .wrap{max-width:860px; margin:0 auto; padding:0 18px 80px}
+
+  /* ---------- header / mission control ---------- */
+  header.hero{padding:34px 0 22px}
+  .eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.22em; color:var(--faint); text-transform:uppercase; margin:0 0 10px}
+  h1{font-size:clamp(28px,6vw,44px); line-height:1.02; letter-spacing:-.02em; margin:0; font-weight:800}
+  h1 .pct{color:var(--code)}
+  .lede{color:var(--muted); margin:12px 0 0; font-size:15px; max-width:54ch}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; margin-top:18px}
+  button.ctl{
+    font-family:var(--mono); font-size:12px; letter-spacing:.04em;
+    background:var(--panel); color:var(--ink); border:1px solid var(--line);
+    border-radius:9px; padding:9px 13px; cursor:pointer; box-shadow:var(--shadow);
+  }
+  button.ctl:hover{border-color:var(--code)}
+  button.ctl:focus-visible{outline:2px solid var(--code); outline-offset:2px}
+
+  /* pipeline */
+  .pipeline{margin-top:22px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 16px 14px; box-shadow:var(--shadow)}
+  .pipe-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px}
+  .pipe-top .label{font-family:var(--mono); font-size:11px; letter-spacing:.16em; color:var(--faint); text-transform:uppercase}
+  .pipe-top .count{font-family:var(--mono); font-size:12px; color:var(--muted)}
+  .stages{display:flex; gap:8px}
+  .stage{flex:1; min-width:0}
+  .stage .track{height:10px; border-radius:5px; background:var(--line-2); overflow:hidden; position:relative}
+  .stage .fill{height:100%; width:0; background:var(--code); border-radius:5px; transition:width .5s cubic-bezier(.4,0,.2,1)}
+  .stage.cur .track{box-shadow:0 0 0 2px color-mix(in srgb,var(--today) 55%,transparent)}
+  .stage .cap{display:flex; justify-content:space-between; margin-top:7px}
+  .stage .cap .wk{font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; color:var(--muted)}
+  .stage .cap .wp{font-family:var(--mono); font-size:10.5px; color:var(--faint)}
+  .stage.cur .cap .wk{color:var(--today)}
+
+  /* ---------- week sections ---------- */
+  section.week{margin-top:30px}
+  .week-head{display:flex; align-items:baseline; gap:12px; padding:0 2px 12px; border-bottom:1px solid var(--line); cursor:pointer}
+  .week-head .num{font-family:var(--mono); font-size:12px; color:var(--code); letter-spacing:.1em; font-weight:600}
+  .week-head .theme{font-size:14px; color:var(--muted); flex:1}
+  .week-head .wprog{font-family:var(--mono); font-size:11px; color:var(--faint)}
+  .week-head .chev{color:var(--faint); transition:transform .25s ease; font-size:12px}
+  .week.collapsed .chev{transform:rotate(-90deg)}
+  .week.collapsed .days{display:none}
+
+  /* ---------- day cards ---------- */
+  .days{padding-top:14px; display:flex; flex-direction:column; gap:12px}
+  .day{background:var(--panel); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); overflow:hidden}
+  .day.cur{border-color:color-mix(in srgb,var(--today) 60%,var(--line))}
+  .day-head{display:flex; align-items:center; gap:13px; padding:14px 16px; cursor:pointer}
+  .daynum{font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:.02em; color:var(--ink);
+    background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:6px 9px; white-space:nowrap}
+  .day.cur .daynum{color:#fff; background:var(--today); border-color:var(--today)}
+  .day.done .daynum{color:#fff; background:var(--done); border-color:var(--done)}
+  .day-title{font-weight:650; font-size:15.5px; flex:1; letter-spacing:-.01em}
+  .badge-star{font-family:var(--mono); font-size:10px; letter-spacing:.1em; color:var(--meta); border:1px solid color-mix(in srgb,var(--meta) 40%,transparent); border-radius:20px; padding:3px 8px}
+  .badge-wknd{font-family:var(--mono); font-size:10px; letter-spacing:.1em; color:var(--faint); border:1px solid var(--line); border-radius:20px; padding:3px 8px}
+  .day-prog{font-family:var(--mono); font-size:11px; color:var(--faint); white-space:nowrap}
+  .day-chev{color:var(--faint); transition:transform .25s ease; font-size:12px}
+  .day.collapsed .day-chev{transform:rotate(-90deg)}
+  .day.collapsed .tasks{display:none}
+
+  .tasks{border-top:1px solid var(--line-2); padding:6px 16px 14px}
+  .task{display:flex; gap:11px; align-items:flex-start; padding:9px 0; border-bottom:1px solid var(--line-2)}
+  .task:last-child{border-bottom:none}
+  .cb{appearance:none; -webkit-appearance:none; margin:2px 0 0; flex:none;
+    width:19px; height:19px; border:1.6px solid var(--line); border-radius:6px; background:var(--panel-2); cursor:pointer; position:relative; transition:.15s}
+  .cb:hover{border-color:var(--done)}
+  .cb:focus-visible{outline:2px solid var(--code); outline-offset:2px}
+  .cb:checked{background:var(--done); border-color:var(--done)}
+  .cb:checked::after{content:""; position:absolute; left:5.5px; top:2px; width:5px; height:9px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg)}
+  .task-body{flex:1; min-width:0}
+  .tag{font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; font-weight:600; padding:2px 6px; border-radius:5px; margin-right:8px; vertical-align:1.5px; white-space:nowrap}
+  .tag.code{color:var(--code); background:color-mix(in srgb,var(--code) 12%,transparent)}
+  .tag.lang{color:var(--lang); background:color-mix(in srgb,var(--lang) 13%,transparent)}
+  .tag.craft{color:var(--craft); background:color-mix(in srgb,var(--craft) 13%,transparent)}
+  .tag.meta{color:var(--meta); background:color-mix(in srgb,var(--meta) 14%,transparent)}
+  .task-text{font-size:14.5px}
+  .task.checked .task-text{color:var(--faint); text-decoration:line-through; text-decoration-color:var(--line)}
+  .links{margin-top:5px; display:flex; flex-wrap:wrap; gap:6px 14px}
+  .links a{font-size:12.5px; font-family:var(--mono); letter-spacing:.01em}
+  .links a::before{content:"↗ "; color:var(--faint); border:none}
+
+  /* ---------- reference ---------- */
+  .ref{margin-top:36px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px; box-shadow:var(--shadow)}
+  .ref h2{font-size:13px; font-family:var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin:0 0 14px}
+  .ref h3{font-size:14px; margin:18px 0 7px; letter-spacing:-.01em}
+  .ref h3:first-of-type{margin-top:0}
+  .ref ul{margin:0; padding-left:18px}
+  .ref li{font-size:14px; margin:4px 0; color:var(--muted)}
+  .ref li b{color:var(--ink); font-weight:650}
+  .foot{margin-top:24px; font-size:12px; color:var(--faint); font-family:var(--mono); letter-spacing:.01em; line-height:1.7}
+  .foot .danger{color:#C0392B; cursor:pointer; border-bottom:1px solid currentColor}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+  @media (max-width:560px){
+    .wrap{padding:0 14px 64px}
+    .stage .cap .wp{display:none}
+    .day-prog{display:none}
+    .task-text{font-size:14px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="eyebrow">Apple · SDET · Interview Prep</p>
+    <h1>28-Day Training Log <span class="pct" id="heroPct">0%</span></h1>
+    <p class="lede">Open it, go to your current day, work top to bottom, tap to check off. Every link is built in — solve all coding in <b>Python</b>, out loud.</p>
+    <div class="controls">
+      <button class="ctl" id="jumpBtn">→ Jump to current day</button>
+      <button class="ctl" id="expandBtn">Expand all</button>
+      <button class="ctl" id="themeBtn">◐ Theme</button>
+    </div>
+    <div class="pipeline">
+      <div class="pipe-top">
+        <span class="label">Pipeline · 4 stages</span>
+        <span class="count" id="taskCount">0 / 0 tasks</span>
+      </div>
+      <div class="stages" id="stages"></div>
+    </div>
+  </header>
+
+  <main id="plan"></main>
+
+  <div class="ref">
+    <h2>Quick reference</h2>
+    <h3>Answer these cold</h3>
+    <ul>
+      <li><b>Coding (Python):</b> Two Sum · string compression · max-profit buy/sell · modified binary search · reverse/merge linked list · valid parentheses · level-order traversal · <b>thread-safe LRU cache</b> · print-in-order.</li>
+      <li><b>SDET:</b> your framework architecture &amp; patterns · flaky-test handling · implicit/explicit/fluent wait · findElement vs findElements · StaleElementReferenceException · what to automate vs not · TDD vs BDD · severity vs priority · Selenium POM → XCUITest mapping.</li>
+      <li><b>Design:</b> thread-safe LRU cache · design a test framework · rate limiter · parking lot/elevator · "how would you test X."</li>
+    </ul>
+    <h3>Interview-day habits Apple rewards</h3>
+    <ul>
+      <li>State assumptions and <b>validate inputs (null/empty/edge) before coding.</b></li>
+      <li><b>Narrate continuously</b> — silence reads as stuck.</li>
+      <li>A working answer is the baseline; explaining <b>efficiency + maintainability</b> wins.</li>
+      <li>After solving, proactively say <b>"here's how I'd test this"</b> — lean into being an SDET.</li>
+      <li>Defend every résumé line with specifics and numbers.</li>
+    </ul>
+    <h3>If you only drill three things</h3>
+    <ul>
+      <li>Timed DSA mediums in <b>Python</b>, out loud, daily.</li>
+      <li><b>Thread-safe LRU cache</b> + basic concurrency — write it cold.</li>
+      <li>Framework-design pitch + 6 STAR stories with your <b>Schwab compliance + Copilot-AI</b> differentiators.</li>
+    </ul>
+  </div>
+
+  <p class="foot" id="foot"></p>
+</div>
+
+<script>
+/* ----------------------------- storage (works everywhere, degrades gracefully) ----------------------------- */
+const Store = (() => {
+  let mem = {}, ok = false;
+  try { const k="__probe"; localStorage.setItem(k,"1"); localStorage.removeItem(k); ok = true; } catch(e){ ok = false; }
+  const KEY = "apple-sdet-prep-v1";
+  return {
+    ok,
+    load(){ if(ok){ try{ return JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){ return {}; } } return mem; },
+    save(o){ if(ok){ try{ localStorage.setItem(KEY, JSON.stringify(o)); }catch(e){} } else { mem = o; } }
+  };
+})();
+let state = Object.assign({ done:{}, theme:"light", openWeek:{}, openDay:{} }, Store.load());
+
+/* ----------------------------- link shorthands ----------------------------- */
+const L = {
+  road:["NeetCode roadmap","https://neetcode.io/roadmap"],
+  prac:["NeetCode practice","https://neetcode.io/practice"],
+  course:["NeetCode Python course","https://neetcode.io/courses"],
+  thiStr:["THI: strings","https://www.techinterviewhandbook.org/algorithms/string/"],
+  thiBeh:["STAR guide","https://www.techinterviewhandbook.org/behavioral-interview/"],
+  coll:["docs: collections","https://docs.python.org/3/library/collections.html"],
+  tutds:["docs: data structures","https://docs.python.org/3/tutorial/datastructures.html"],
+  strm:["docs: string methods","https://docs.python.org/3/library/stdtypes.html#string-methods"],
+  bisect:["docs: bisect","https://docs.python.org/3/library/bisect.html"],
+  thread:["docs: threading","https://docs.python.org/3/library/threading.html"],
+  jenkov:["Java concurrency (concept)","https://jenkov.com/tutorials/java-concurrency/index.html"],
+  conc:["LeetCode concurrency set","https://leetcode.com/problemset/concurrency/"],
+  refac:["Design patterns catalog","https://refactoring.guru/design-patterns/catalog"],
+  sdp:["System Design Primer","https://github.com/donnemartin/system-design-primer"],
+  ra:["REST Assured","https://rest-assured.io/"],
+  pw:["Playwright","https://playwright.dev/"],
+  pwApi:["Playwright API testing","https://playwright.dev/docs/api-testing"],
+  pwAct:["Playwright auto-waiting","https://playwright.dev/docs/actionability"],
+  sql50:["LeetCode SQL 50","https://leetcode.com/studyplan/top-sql-50/"],
+  sqlzoo:["SQLZoo","https://sqlzoo.net/"],
+  glass:["Apple SDET experiences","https://www.glassdoor.com/Interview/Apple-Software-Development-Engineer-In-Test-SDET-Interview-Questions-EI_IE1138.0,5_KO6,48.htm"],
+  taro:["More Apple experiences","https://www.jointaro.com/interviews/companies/apple/"],
+  bekFw:["SDET framework Q&A","https://beknazarsuranchiyev.medium.com/top-framework-interview-questions-for-sdet-60473e5fd616"],
+  bekSel:["SDET Selenium Q&A","https://beknazarsuranchiyev.medium.com/top-selenium-interview-questions-for-sdet-29cc0151211d"],
+  hws:["Hacking with Swift · 100 Days","https://www.hackingwithswift.com/100/swiftui"],
+  tour:["A Swift Tour","https://docs.swift.org/swift-book/documentation/the-swift-programming-language/guidedtour/"],
+  xctest:["XCTest docs","https://developer.apple.com/documentation/xctest"],
+  swtest:["Swift Testing docs","https://developer.apple.com/documentation/testing"],
+  wwdc:["WWDC25: UI automation","https://developer.apple.com/videos/play/wwdc2025/344/"]
+};
+const lc = (label, slug) => [label, "https://leetcode.com/problems/"+slug+"/"];
+
+/* ----------------------------- the plan ----------------------------- */
+const PLAN = [
+{ n:1, theme:"DSA core · lock the Online Assessment · switch to Python", days:[
+  { n:1, title:"Arrays & Hashing", tasks:[
+    {tag:"DSA", t:"Learn — open the roadmap, click “Arrays & Hashing”, watch the intro", lk:[L.road]},
+    {tag:"DSA", t:"Solve: Two Sum", lk:[lc("LeetCode","two-sum")]},
+    {tag:"DSA", t:"Solve: Contains Duplicate", lk:[lc("LeetCode","contains-duplicate")]},
+    {tag:"DSA", t:"Solve: Valid Anagram", lk:[lc("LeetCode","valid-anagram")]},
+    {tag:"DSA", t:"Solve: Group Anagrams", lk:[lc("LeetCode","group-anagrams")]},
+    {tag:"PYTHON", t:"Learn dict, set, Counter, defaultdict", lk:[L.coll, L.course]},
+    {tag:"SDET", t:"Read 8–10 Apple SDET interview experiences; note recurring questions", lk:[L.glass]}
+  ]},
+  { n:2, title:"Two Pointers & Sliding Window", tasks:[
+    {tag:"DSA", t:"Learn — roadmap: Two Pointers, then Sliding Window", lk:[L.road]},
+    {tag:"DSA", t:"Solve: Valid Palindrome", lk:[lc("LeetCode","valid-palindrome")]},
+    {tag:"DSA", t:"Solve: Two Sum II", lk:[lc("LeetCode","two-sum-ii-input-array-is-sorted")]},
+    {tag:"DSA", t:"Solve: 3Sum", lk:[lc("LeetCode","3sum")]},
+    {tag:"DSA", t:"Solve: Best Time to Buy & Sell Stock (known Apple SDET Q)", lk:[lc("LeetCode","best-time-to-buy-and-sell-stock")]},
+    {tag:"DSA", t:"Solve: Longest Substring Without Repeating Characters", lk:[lc("LeetCode","longest-substring-without-repeating-characters")]},
+    {tag:"PYTHON", t:"Comprehensions, slicing, enumerate, zip, sorted(key=…)", lk:[L.tutds]},
+    {tag:"SDET", t:"Explain implicit vs explicit vs fluent wait; how you handle flaky tests", lk:[L.bekSel]}
+  ]},
+  { n:3, title:"Strings", tasks:[
+    {tag:"DSA", t:"Learn — Tech Interview Handbook string guide", lk:[L.thiStr]},
+    {tag:"DSA", t:"Solve: String Compression", lk:[lc("LeetCode","string-compression")]},
+    {tag:"DSA", t:"Solve: Reverse Words in a String", lk:[lc("LeetCode","reverse-words-in-a-string")]},
+    {tag:"DSA", t:"Solve: First Unique Character in a String", lk:[lc("LeetCode","first-unique-character-in-a-string")]},
+    {tag:"DSA", t:"Bonus (from real Apple screens): return strings with length > 3; write a string-decompression function"},
+    {tag:"PYTHON", t:"String methods, f-strings, join/split, ord/chr", lk:[L.strm]},
+    {tag:"SDET", t:"findElement vs findElements; handling StaleElementReferenceException; locator strategy (id > css > xpath)"}
+  ]},
+  { n:4, title:"Binary Search (Apple loves modified variants)", tasks:[
+    {tag:"DSA", t:"Learn — roadmap: Binary Search", lk:[L.road]},
+    {tag:"DSA", t:"Solve: Binary Search", lk:[lc("LeetCode","binary-search")]},
+    {tag:"DSA", t:"Solve: Search Insert Position", lk:[lc("LeetCode","search-insert-position")]},
+    {tag:"DSA", t:"Solve: Find Minimum in Rotated Sorted Array", lk:[lc("LeetCode","find-minimum-in-rotated-sorted-array")]},
+    {tag:"DSA", t:"Solve: Search in Rotated Sorted Array", lk:[lc("LeetCode","search-in-rotated-sorted-array")]},
+    {tag:"DSA", t:"Solve: Koko Eating Bananas", lk:[lc("LeetCode","koko-eating-bananas")]},
+    {tag:"PYTHON", t:"The bisect module", lk:[L.bisect]},
+    {tag:"SDET", t:"TDD vs BDD; what to automate vs not; the test pyramid"}
+  ]},
+  { n:5, title:"QA MCQ blitz — make the assessment a formality", tasks:[
+    {tag:"DSA", t:"Warmup: redo any Day 1–4 problem from scratch"},
+    {tag:"SDET", t:"Drill: test plan components, severity vs priority, box testing, SDLC vs STLC, regression/smoke/sanity, boundary value & equivalence partitioning, defect lifecycle", lk:[L.bekFw]},
+    {tag:"PYTHON", t:"Rewrite one Selenium helper's logic in idiomatic Python"}
+  ]},
+  { n:6, title:"Timed mock Online Assessment", weekend:true, tasks:[
+    {tag:"MOCK", t:"30 min: 1 unseen medium problem from NeetCode practice", lk:[L.prac]},
+    {tag:"MOCK", t:"30 mixed QA MCQs from your Day-5 notes; review every miss"},
+    {tag:"PYTHON", t:"Finish NeetCode “Effective Python for coding interviews” essentials", lk:[L.course]}
+  ]},
+  { n:7, title:"Review + redo weak spots", tasks:[
+    {tag:"REVIEW", t:"Re-solve, from scratch, the 5 hardest problems of the week"},
+    {tag:"REVIEW", t:"Start a mistake log (off-by-one, null/empty, wrong data structure, complexity miscalc)"}
+  ]}
+]},
+{ n:2, theme:"DSA intermediate · concurrency · debugging · start Swift", days:[
+  { n:8, title:"Stacks & Queues", tasks:[
+    {tag:"DSA", t:"Learn — roadmap: Stack", lk:[L.road]},
+    {tag:"DSA", t:"Solve: Valid Parentheses", lk:[lc("LeetCode","valid-parentheses")]},
+    {tag:"DSA", t:"Solve: Min Stack", lk:[lc("LeetCode","min-stack")]},
+    {tag:"DSA", t:"Solve: Evaluate Reverse Polish Notation", lk:[lc("LeetCode","evaluate-reverse-polish-notation")]},
+    {tag:"DSA", t:"Solve: Daily Temperatures", lk:[lc("LeetCode","daily-temperatures")]},
+    {tag:"DSA", t:"Solve: Implement Queue using Stacks", lk:[lc("LeetCode","implement-queue-using-stacks")]},
+    {tag:"SWIFT", t:"Swift Day 1 — variables, types, strings + skim A Swift Tour", lk:[L.hws, L.tour]},
+    {tag:"SDET", t:"Explain your framework architecture end-to-end in 3 minutes, out loud"}
+  ]},
+  { n:9, title:"Linked Lists", tasks:[
+    {tag:"DSA", t:"Learn — roadmap: Linked List", lk:[L.road]},
+    {tag:"DSA", t:"Solve: Reverse Linked List", lk:[lc("LeetCode","reverse-linked-list")]},
+    {tag:"DSA", t:"Solve: Merge Two Sorted Lists", lk:[lc("LeetCode","merge-two-sorted-lists")]},
+    {tag:"DSA", t:"Solve: Linked List Cycle", lk:[lc("LeetCode","linked-list-cycle")]},
+    {tag:"DSA", t:"Solve: Remove Nth Node From End of List", lk:[lc("LeetCode","remove-nth-node-from-end-of-list")]},
+    {tag:"DSA", t:"Solve: Odd Even Linked List (appears at Apple)", lk:[lc("LeetCode","odd-even-linked-list")]},
+    {tag:"SWIFT", t:"Swift Days 2–3 — arrays, dictionaries, sets, conditionals, loops", lk:[L.hws]},
+    {tag:"SDET", t:"OOP in your framework — concrete uses of inheritance, interfaces, abstraction, encapsulation"}
+  ]},
+  { n:10, title:"Trees — traversal", tasks:[
+    {tag:"DSA", t:"Learn — roadmap: Trees", lk:[L.road]},
+    {tag:"DSA", t:"Solve: Invert Binary Tree", lk:[lc("LeetCode","invert-binary-tree")]},
+    {tag:"DSA", t:"Solve: Maximum Depth of Binary Tree", lk:[lc("LeetCode","maximum-depth-of-binary-tree")]},
+    {tag:"DSA", t:"Solve: Same Tree", lk:[lc("LeetCode","same-tree")]},
+    {tag:"DSA", t:"Solve: Binary Tree Level Order Traversal", lk:[lc("LeetCode","binary-tree-level-order-traversal")]},
+    {tag:"DSA", t:"Solve: Balanced Binary Tree", lk:[lc("LeetCode","balanced-binary-tree")]},
+    {tag:"SWIFT", t:"Swift Days 4–5 — functions, optionals (key concept)", lk:[L.hws]},
+    {tag:"API", t:"API basics — REST methods, status codes, auth", lk:[L.ra]}
+  ]},
+  { n:11, title:"Trees (part 2) + Backtracking", tasks:[
+    {tag:"DSA", t:"Solve: Validate Binary Search Tree", lk:[lc("LeetCode","validate-binary-search-tree")]},
+    {tag:"DSA", t:"Solve: Lowest Common Ancestor of a BST", lk:[lc("LeetCode","lowest-common-ancestor-of-a-binary-search-tree")]},
+    {tag:"DSA", t:"Solve: Diameter of Binary Tree", lk:[lc("LeetCode","diameter-of-binary-tree")]},
+    {tag:"DSA", t:"Solve: Subsets", lk:[lc("LeetCode","subsets")]},
+    {tag:"DSA", t:"Solve: Combination Sum", lk:[lc("LeetCode","combination-sum")]},
+    {tag:"SWIFT", t:"Swift Days 6–7 — closures", lk:[L.hws]},
+    {tag:"SDET", t:"How you'd test a login / authentication flow (functional, negative, security, edge) — Apple identity team"}
+  ]},
+  { n:12, title:"Concurrency fundamentals", tasks:[
+    {tag:"DSA", t:"Learn — Python threading (GIL, locks); concept reference for depth", lk:[L.thread, L.jenkov]},
+    {tag:"DSA", t:"Solve: Print in Order", lk:[lc("LeetCode","print-in-order")]},
+    {tag:"DSA", t:"Solve: Print FooBar Alternately", lk:[lc("LeetCode","print-foobar-alternately")]},
+    {tag:"DSA", t:"Solve: Fizz Buzz Multithreaded (full set here)", lk:[lc("LeetCode","fizz-buzz-multithreaded"), L.conc]},
+    {tag:"SWIFT", t:"Swift Days 8–9 — structs, classes", lk:[L.hws]},
+    {tag:"SDET", t:"Why parallel execution causes flakiness (shared state, races) and how you mitigate it"}
+  ]},
+  { n:13, title:"★ Thread-safe LRU Cache — the signature question", weekend:true, star:true, tasks:[
+    {tag:"BUILD", t:"Build a plain LRU cache in Python (hashmap + doubly linked list, O(1) get/put)", lk:[lc("LeetCode: LRU Cache","lru-cache")]},
+    {tag:"BUILD", t:"Make it thread-safe — add a lock around get/put; discuss contention"},
+    {tag:"BUILD", t:"Stretch: LFU Cache", lk:[lc("LeetCode","lfu-cache")]},
+    {tag:"BUILD", t:"Be able to: draw it, explain why two data structures, list edge cases (capacity 1, missing key, update existing, evict-then-reinsert), and say how you'd test it"},
+    {tag:"SWIFT", t:"Swift Days 10–11 — protocols, optionals review", lk:[L.hws]}
+  ]},
+  { n:14, title:"Debug-the-broken-code round", tasks:[
+    {tag:"DEBUG", t:"Inject bugs into 4–5 of your own past solutions (off-by-one, null, wrong condition, boundary); set aside, then fix while narrating"},
+    {tag:"DEBUG", t:"Practice the habit: validate inputs and reason about nil/edge cases out loud before changing code"},
+    {tag:"SDET", t:"Draft a STAR story: a hard bug you found and how you isolated it"}
+  ]}
+]},
+{ n:3, theme:"low-level / OOP design · framework depth · API/SQL · XCTest", days:[
+  { n:15, title:"OOP principles + design patterns", tasks:[
+    {tag:"DESIGN", t:"Learn — patterns catalog (Singleton, Factory, Builder, Strategy, Decorator)", lk:[L.refac]},
+    {tag:"DESIGN", t:"For each pattern, write where it lives in a test framework (Singleton=driver/config, Factory=driver/page, Builder=test data, Strategy=waits/locators, POM as a pattern)"},
+    {tag:"SWIFT", t:"Swift Days 12–14 — enums, error handling, async/await", lk:[L.hws]},
+    {tag:"DSA", t:"Redo LRU Cache from scratch (keep it warm)", lk:[lc("LeetCode","lru-cache")]}
+  ]},
+  { n:16, title:"Low-Level Design #1", tasks:[
+    {tag:"DESIGN", t:"Re-derive thread-safe LRU cache (requirements → classes → interfaces → concurrency/edges)"},
+    {tag:"DESIGN", t:"Design a rate limiter (token bucket / sliding window)", lk:[L.refac]},
+    {tag:"DSA", t:"2 review problems from your mistake log"}
+  ]},
+  { n:17, title:"LLD #2 — Design a Test Automation Framework (home turf)", tasks:[
+    {tag:"DESIGN", t:"Present end-to-end, out loud: layers (driver mgmt, POM, test data, config, reporting, CI hooks), patterns, parallel execution, flakiness handling, why each choice", lk:[L.bekFw]},
+    {tag:"XCTEST", t:"Read XCTest docs — XCTestCase, setUp/tearDown, XCTAssert*", lk:[L.xctest]}
+  ]},
+  { n:18, title:"Low-Level Design #3", tasks:[
+    {tag:"DESIGN", t:"Parking Lot or Elevator system — class relationships, enums for state, extensibility"},
+    {tag:"XCTEST", t:"XCUITest / UI testing — read docs + watch WWDC25 (record/replay, accessibility identifiers, stable selectors)", lk:[L.xctest, L.wwdc]},
+    {tag:"DSA", t:"1 unseen medium from NeetCode practice", lk:[L.prac]}
+  ]},
+  { n:19, title:"API testing depth", tasks:[
+    {tag:"API", t:"REST methods, status codes, auth, idempotency, schema/contract validation; how API + UI tests live in one framework", lk:[L.ra, L.pwApi]},
+    {tag:"API", t:"Be ready: design API tests for a login / payments flow (Apple identity team)"},
+    {tag:"XCTEST", t:"Swift Testing vs XCTest talking points — unit = Swift Testing (@Test/#expect, parallel by default); UI automation = XCUITest, stays in XCTest", lk:[L.swtest]}
+  ]},
+  { n:20, title:"SQL + automation deep-dive", weekend:true, tasks:[
+    {tag:"SQL", t:"Joins, GROUP BY / HAVING, nth-highest salary, find duplicates", lk:[L.sql50, L.sqlzoo]},
+    {tag:"SDET", t:"Waits/synchronization, dynamic elements, cross-browser; Playwright auto-waiting; map your Selenium POM → XCUITest", lk:[L.pwAct]},
+    {tag:"DSA", t:"1 review problem"}
+  ]},
+  { n:21, title:"Résumé mining (Apple will dig in)", tasks:[
+    {tag:"PREP", t:"For each project (Copilot 5-agent pipeline, BDD framework, BankingAPIGateway, ComplianceQA-RAG…): problem → your role → hardest decision → measurable outcome"},
+    {tag:"PREP", t:"Flag the JD match: your GenAI/LLM-for-test-authoring work (Copilot agents) hits Apple's preferred qual — lead with it"},
+    {tag:"PREP", t:"Prep to go deep on Schwab compliance, audit logging, regulated-finance rigor — your differentiator for an identity/security team"}
+  ]}
+]},
+{ n:4, theme:"system design lite · behavioral · mocks · taper", days:[
+  { n:22, title:"Test strategy / scale design", tasks:[
+    {tag:"DESIGN", t:"“How would you test [iMessage delivery / a payments API / photo sync]?” — functional, edge, performance, security, data, concurrency, failure modes"},
+    {tag:"DESIGN", t:"Design a scalable, parallel, low-flakiness CI test suite", lk:[L.sdp]},
+    {tag:"DSA", t:"Redo LRU + 1 concurrency problem (keep both warm)"}
+  ]},
+  { n:23, title:"Behavioral prep", tasks:[
+    {tag:"PREP", t:"Learn STAR structure", lk:[L.thiBeh]},
+    {tag:"PREP", t:"Write 6–8 STAR stories: hardest bug · conflict with dev/manager · project turned around · built from scratch · a failure + lesson · influencing without authority. Weave in Schwab compliance/audit angle."},
+    {tag:"SWIFT", t:"Swift Day 15 — consolidation", lk:[L.hws]}
+  ]},
+  { n:24, title:"Mock interview #1 — coding", tasks:[
+    {tag:"MOCK", t:"45 min, talk the entire time: 1 medium DSA + 1 concurrency. Get feedback on communication, not just correctness", lk:[L.prac]}
+  ]},
+  { n:25, title:"Mock interview #2 — design + behavioral", tasks:[
+    {tag:"MOCK", t:"1 LLD / framework-design question + 3 behavioral. Record yourself; rewatch for rambling and filler"}
+  ]},
+  { n:26, title:"Full simulated loop", weekend:true, tasks:[
+    {tag:"MOCK", t:"3–4 back-to-back 45-min rounds: DSA → concurrency/debug → design → behavioral. Build the stamina the real loop demands; note where clarity dropped"}
+  ]},
+  { n:27, title:"Fix weak spots only", tasks:[
+    {tag:"REVIEW", t:"Re-drill exactly what broke in the mocks"},
+    {tag:"REVIEW", t:"Re-solve LRU cache · re-run your framework-design pitch · re-tell your 2 weakest STAR stories"}
+  ]},
+  { n:28, title:"Light taper", weekend:true, tasks:[
+    {tag:"TAPER", t:"Re-read 5 Apple SDET experiences", lk:[L.taro]},
+    {tag:"TAPER", t:"Skim notes + mistake log; re-solve 2 easy problems for confidence"},
+    {tag:"TAPER", t:"Prep 4–5 smart questions to ask interviewers. Sleep early. Do not cram new topics."}
+  ]}
+]}
+];
+
+const TAGCLASS = { DSA:"code", BUILD:"code", DEBUG:"meta", PYTHON:"lang", SWIFT:"lang", XCTEST:"lang",
+  SDET:"craft", DESIGN:"craft", API:"craft", SQL:"craft", MOCK:"meta", REVIEW:"meta", PREP:"meta", TAPER:"meta" };
+
+/* ----------------------------- build IDs + flat list ----------------------------- */
+const allTaskIds = [];
+PLAN.forEach(w => w.days.forEach(d => d.tasks.forEach((t,i) => { t.id = `w${w.n}d${d.n}t${i}`; allTaskIds.push(t.id); })));
+
+/* ----------------------------- render ----------------------------- */
+const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const planEl = document.getElementById("plan");
+
+function dayDone(d){ return d.tasks.every(t => state.done[t.id]); }
+function currentDayN(){
+  for(const w of PLAN) for(const d of w.days) if(!dayDone(d)) return d.n;
+  return 28;
+}
+
+function render(){
+  const curN = currentDayN();
+  planEl.innerHTML = "";
+  PLAN.forEach(w => {
+    const wkColl = state.openWeek[w.n] === false;
+    const sec = document.createElement("section");
+    sec.className = "week" + (wkColl ? " collapsed":"");
+    const wDone = w.days.reduce((a,d)=>a+d.tasks.filter(t=>state.done[t.id]).length,0);
+    const wTot  = w.days.reduce((a,d)=>a+d.tasks.length,0);
+    sec.innerHTML = `
+      <div class="week-head" data-wk="${w.n}">
+        <span class="num">WEEK ${w.n}</span>
+        <span class="theme">${esc(w.theme)}</span>
+        <span class="wprog">${wDone}/${wTot}</span>
+        <span class="chev">▾</span>
+      </div>
+      <div class="days"></div>`;
+    const daysEl = sec.querySelector(".days");
+    w.days.forEach(d => {
+      const done = dayDone(d);
+      const isCur = d.n === curN;
+      const dColl = state.openDay[d.n] === undefined ? !isCur : state.openDay[d.n] === false;
+      const dc = d.tasks.filter(t=>state.done[t.id]).length;
+      const card = document.createElement("div");
+      card.id = "day-"+d.n;
+      card.className = "day" + (done?" done":"") + (isCur?" cur":"") + (dColl?" collapsed":"");
+      const badges = (d.star?`<span class="badge-star">SIGNATURE</span>`:"") + (d.weekend?`<span class="badge-wknd">WEEKEND</span>`:"");
+      card.innerHTML = `
+        <div class="day-head" data-day="${d.n}">
+          <span class="daynum">DAY ${String(d.n).padStart(2,"0")}</span>
+          <span class="day-title">${esc(d.title)}</span>
+          ${badges}
+          <span class="day-prog">${dc}/${d.tasks.length}</span>
+          <span class="day-chev">▾</span>
+        </div>
+        <div class="tasks"></div>`;
+      const tasksEl = card.querySelector(".tasks");
+      d.tasks.forEach(t => {
+        const checked = !!state.done[t.id];
+        const row = document.createElement("div");
+        row.className = "task" + (checked?" checked":"");
+        const links = (t.lk||[]).map(([lab,url])=>`<a href="${url}" target="_blank" rel="noopener">${esc(lab)}</a>`).join("");
+        row.innerHTML = `
+          <input type="checkbox" class="cb" data-id="${t.id}" ${checked?"checked":""} aria-label="${esc(t.t)}">
+          <div class="task-body">
+            <span class="tag ${TAGCLASS[t.tag]||"meta"}">${t.tag}</span><span class="task-text">${esc(t.t)}</span>
+            ${links?`<div class="links">${links}</div>`:""}
+          </div>`;
+        tasksEl.appendChild(row);
+      });
+      daysEl.appendChild(card);
+    });
+    planEl.appendChild(sec);
+  });
+  updateProgress(curN);
+  bind();
+}
+
+function updateProgress(curN){
+  const total = allTaskIds.length;
+  const done = allTaskIds.filter(id=>state.done[id]).length;
+  const pct = total? Math.round(done/total*100):0;
+  document.getElementById("heroPct").textContent = pct+"%";
+  document.getElementById("taskCount").textContent = `${done} / ${total} tasks · Day ${curN} is your focus`;
+  const stages = document.getElementById("stages");
+  stages.innerHTML = "";
+  PLAN.forEach(w => {
+    const wd = w.days.reduce((a,d)=>a+d.tasks.filter(t=>state.done[t.id]).length,0);
+    const wt = w.days.reduce((a,d)=>a+d.tasks.length,0);
+    const wp = wt?Math.round(wd/wt*100):0;
+    const cur = w.days.some(d=>d.n===curN);
+    const el = document.createElement("div");
+    el.className = "stage"+(cur?" cur":"");
+    el.innerHTML = `<div class="track"><div class="fill" style="width:${wp}%"></div></div>
+      <div class="cap"><span class="wk">WK${w.n}</span><span class="wp">${wp}%</span></div>`;
+    stages.appendChild(el);
+  });
+}
+
+function bind(){
+  document.querySelectorAll(".cb").forEach(cb=>{
+    cb.onchange = () => {
+      const id = cb.dataset.id;
+      if(cb.checked) state.done[id]=true; else delete state.done[id];
+      Store.save(state);
+      render();
+    };
+  });
+  document.querySelectorAll(".day-head").forEach(h=>{
+    h.onclick = () => { const n=+h.dataset.day; const card=h.parentElement;
+      const willOpen = card.classList.contains("collapsed");
+      state.openDay[n] = willOpen; Store.save(state); render(); };
+  });
+  document.querySelectorAll(".week-head").forEach(h=>{
+    h.onclick = () => { const n=+h.dataset.wk;
+      const willOpen = h.parentElement.classList.contains("collapsed");
+      state.openWeek[n] = willOpen; Store.save(state); render(); };
+  });
+}
+
+/* ----------------------------- controls ----------------------------- */
+function applyTheme(){ document.documentElement.setAttribute("data-theme", state.theme); }
+document.getElementById("themeBtn").onclick = () => {
+  state.theme = state.theme==="light"?"dark":"light"; applyTheme(); Store.save(state);
+};
+document.getElementById("jumpBtn").onclick = () => {
+  const n = currentDayN();
+  state.openDay[n] = true;
+  for(const w of PLAN) if(w.days.some(d=>d.n===n)) state.openWeek[w.n]=true;
+  Store.save(state); render();
+  const el = document.getElementById("day-"+n);
+  if(el) el.scrollIntoView({behavior:"smooth", block:"start"});
+};
+let allOpen=false;
+document.getElementById("expandBtn").onclick = (e) => {
+  allOpen=!allOpen;
+  PLAN.forEach(w=>{ state.openWeek[w.n]=true; w.days.forEach(d=>state.openDay[d.n]=allOpen); });
+  e.target.textContent = allOpen?"Collapse all":"Expand all";
+  Store.save(state); render();
+};
+
+/* ----------------------------- footer note ----------------------------- */
+document.getElementById("foot").innerHTML =
+  (Store.ok
+    ? "Progress saves automatically on this device. It won't sync between your phone and laptop — each keeps its own. "
+    : "Heads-up: storage is unavailable here, so progress holds for this session only. Open the downloaded file in your browser to save it permanently. ")
+  + `<span class="danger" id="resetBtn">Reset all progress</span>`;
+document.getElementById("resetBtn").onclick = () => {
+  if(confirm("Reset all checkmarks? This can't be undone.")){
+    state.done = {}; Store.save(state); render();
+  }
+};
+
+/* ----------------------------- go ----------------------------- */
+applyTheme();
+render();
+</script>
+</body>
+</html>
